@@ -15,13 +15,13 @@
     <param-value>/WEB-INF/syjserviceskostf-servlet.xml, /WEB-INF/syjserviceskostf-data-service.xml, /WEB-INF/syjserviceskostf-datasource.xml</param-value>
   </context-param>
   <servlet>
-    <servlet-name>visma-net-proxy</servlet-name>
+    <servlet-name>syjserviceskostf</servlet-name>
     <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
     <load-on-startup>0</load-on-startup>    
   </servlet>
   
   <servlet-mapping>
-    <servlet-name>visma-net-proxy</servlet-name>
+    <servlet-name>syjserviceskostf</servlet-name>
     <url-pattern>/</url-pattern>
   </servlet-mapping>
   <session-config>
