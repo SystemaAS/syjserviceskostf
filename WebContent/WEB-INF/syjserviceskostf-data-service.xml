@@ -9,9 +9,4 @@
 
 	<import resource="classpath:syjservicescommon-data-service.xml" />
 
-	<bean id="urlCgiProxyService" class="no.systema.main.service.UrlCgiProxyServiceImpl"/>
-	<bean id="systemaWebLoginService" class="no.systema.main.service.login.SystemaWebLoginServiceImpl"/>
-	<bean id="firmLoginService" class="no.systema.main.service.FirmLoginServiceImpl"/>
-
-
 </beans>
