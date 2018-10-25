@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import no.systema.jservices.common.dao.HeadfDao;
 import no.systema.jservices.common.dao.KostaDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
@@ -61,13 +60,13 @@ public class ResponseOutputterController_KOSTA {
 			@RequestParam(value = "fskode", required = false) String fskode,
 			@RequestParam(value = "fssok", required = false) String fssok) {
 
-		logger.info("/syjsKOSTA");
+		logger.info("/syjsKOSTA Kilroy");
 
 		checkUser(user);
 
 		KostaDto qDto = new KostaDto();
-		qDto.setKabnr(bilagsnr);
-		qDto.setKabnr2(innregnr);
+		qDto.setKabnr(innregnr);
+		qDto.setKabnr2(bilagsnr);
 		qDto.setKafnr(faktnr);
 		qDto.setKalnr(levnr);
 		qDto.setKasg(attkode);
@@ -77,6 +76,9 @@ public class ResponseOutputterController_KOSTA {
 		qDto.setKast(status);
 		qDto.setFskode(fskode);
 		qDto.setFssok(fssok);
+		
+		logger.info("qDto="+ReflectionToStringBuilder.toString(qDto));
+		
 
 		return kostaDaoService.findAllComplex(qDto);
 
@@ -113,7 +115,7 @@ public class ResponseOutputterController_KOSTA {
 			ServletRequestDataBinder binder = new ServletRequestDataBinder(dao);
 			binder.bind(request);
 
-			// TODO: rulerLord?
+			// TODO: rulerLord
 
 			if ("D".equals(mode)) {
 				kostaDaoService.delete(dao);
