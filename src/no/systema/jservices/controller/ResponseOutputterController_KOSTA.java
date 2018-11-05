@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import no.systema.jservices.common.dao.KostaDao;
+import no.systema.jservices.common.dao.KosttDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
+import no.systema.jservices.common.dao.services.KosttDaoService;
 import no.systema.jservices.common.dto.KostaDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
 
@@ -36,10 +38,16 @@ public class ResponseOutputterController_KOSTA {
 	KostaDaoService kostaDaoService;
 
 	@Autowired
+	KosttDaoService kosttDaoService;	
+	
+	
+	@Autowired
 	private BridfDaoService bridfDaoService;
 
 	/**
 	 * Search in KOSTA
+	 * 
+	 * Note: Using usecase names of values instead of column-names, for tracebility
 	 * 
 	 * Example :
 	 * http://localhost:8080/syjserviceskostf/syjsKOSTA?user=SYSTEMA&bilagsnr=10218&innregnr=2001057
@@ -60,7 +68,7 @@ public class ResponseOutputterController_KOSTA {
 			@RequestParam(value = "fskode", required = false) String fskode,
 			@RequestParam(value = "fssok", required = false) String fssok) {
 
-		logger.info("/syjsKOSTA Kilroy");
+		logger.info("/syjsKOSTA");
 
 		checkUser(user);
 
@@ -77,9 +85,6 @@ public class ResponseOutputterController_KOSTA {
 		qDto.setFskode(fskode);
 		qDto.setFssok(fssok);
 		
-		logger.info("qDto="+ReflectionToStringBuilder.toString(qDto));
-		
-
 		return kostaDaoService.findAllComplex(qDto);
 
 	}
@@ -93,8 +98,10 @@ public class ResponseOutputterController_KOSTA {
 	 */
 	@RequestMapping(value = "syjsKOSTA_U.do", method = { RequestMethod.GET, RequestMethod.POST })
 	@ResponseBody
-	public String syjsKOSTA_U(@RequestParam(value = "user", required = true) String user, HttpSession session,
-			HttpServletRequest request) {
+	public String syjsKOSTA_U(@RequestParam(value = "user", required = true) String user,
+							@RequestParam(value = "kttyp", required = false) String kttyp, 
+							HttpSession session,
+							HttpServletRequest request) {
 		JsonResponseWriter2<KostaDao> jsonWriter = new JsonResponseWriter2<KostaDao>();
 		StringBuffer sb = new StringBuffer();
 		String userName = null;
@@ -120,7 +127,10 @@ public class ResponseOutputterController_KOSTA {
 			if ("D".equals(mode)) {
 				kostaDaoService.delete(dao);
 			} else if ("A".equals(mode)) {
-				resultDao = kostaDaoService.create(dao);
+				if (kttyp == null) {
+					throw new RuntimeException("kttyp can not be null.");
+				}
+				resultDao = kostaDaoService.create(dao, kttyp);
 			} else if ("U".equals(mode)) {
 				resultDao = kostaDaoService.update(dao);
 			}
@@ -146,6 +156,26 @@ public class ResponseOutputterController_KOSTA {
 
 	}
 
+
+	/**
+	 * Get KOSTT  nummerseries
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsKOSTT?user=SYSTEMA&ktna=obs
+	 */	
+	@RequestMapping(path = "/syjsKOSTT", method = RequestMethod.GET)
+	public List<KosttDao> getKostt(	@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "ktna", required = false) String ktna) {
+		
+		if (ktna != null) {
+			return kosttDaoService.findByLike(ktna);
+		} else {
+			return kosttDaoService.findAll(null);
+		}
+		
+	}	
+	
+	
 	private void checkUser(String user) {
 		if (bridfDaoService.getUserName(user) == null) {
 			throw new RuntimeException("ERROR: parameter, user, is not valid!");

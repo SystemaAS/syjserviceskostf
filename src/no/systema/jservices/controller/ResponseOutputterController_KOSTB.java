@@ -44,14 +44,14 @@ public class ResponseOutputterController_KOSTB {
 	 * http://localhost:8080/syjserviceskostf/syjsKOSTB?user=SYSTEMA&innregnr=2001075
 	 */
 	@RequestMapping(path = "/syjsKOSTB", method = RequestMethod.GET)
-	public List<KostbDao> getKostb(@RequestParam(value = "user", required = true) String user,
-			@RequestParam(value = "innregnr", required = true) Integer innregnr) {
+	public List<KostbDao> getKostb(	@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "kbbnr", required = true) Integer kbbnr) {
 
 		logger.info("/syjsKOSTB");
 
 		checkUser(user);
 
-		return kostbDaoService.findByKabnr(innregnr);
+		return kostbDaoService.findByKbbnr(kbbnr);
 
 	}
 
