@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.ServletRequestDataBinder;
@@ -84,6 +85,9 @@ public class ResponseOutputterController_KOSTA {
 		qDto.setKast(status);
 		qDto.setFskode(fskode);
 		qDto.setFssok(fssok);
+	
+		logger.info("/syjsKOSTA, qDto="+ReflectionToStringBuilder.reflectionToString(qDto, ToStringStyle.MULTI_LINE_STYLE));
+		
 		
 		return kostaDaoService.findAllComplex(qDto);
 
