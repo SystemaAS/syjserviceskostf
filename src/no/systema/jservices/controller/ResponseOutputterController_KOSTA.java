@@ -1,5 +1,7 @@
 package no.systema.jservices.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,9 +18,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import no.systema.jservices.common.dao.KodtsfDao;
 import no.systema.jservices.common.dao.KostaDao;
 import no.systema.jservices.common.dao.KosttDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
+import no.systema.jservices.common.dao.services.KodtsfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
 import no.systema.jservices.common.dao.services.KosttDaoService;
 import no.systema.jservices.common.dto.KostaDto;
@@ -40,7 +44,9 @@ public class ResponseOutputterController_KOSTA {
 
 	@Autowired
 	KosttDaoService kosttDaoService;	
-	
+
+	@Autowired
+	KodtsfDaoService kodtsfDaoService;		
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;
@@ -73,6 +79,11 @@ public class ResponseOutputterController_KOSTA {
 
 		checkUser(user);
 
+		if (innregnr != null) {
+			return get(innregnr);
+		}
+		
+		
 		KostaDto qDto = new KostaDto();
 		qDto.setKabnr(innregnr);
 		qDto.setKabnr2(bilagsnr);
@@ -168,17 +179,52 @@ public class ResponseOutputterController_KOSTA {
 	 * http://localhost:8080/syjserviceskostf/syjsKOSTT?user=SYSTEMA&ktna=obs
 	 */	
 	@RequestMapping(path = "/syjsKOSTT", method = RequestMethod.GET)
-	public List<KosttDao> getKostt(	@RequestParam(value = "user", required = true) String user,
+	public List<KosttDao> getKostt(	HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
 									@RequestParam(value = "ktna", required = false) String ktna) {
 		
+		checkUser(user);	
+		
+		List<KosttDao> returnList;
+		
 		if (ktna != null) {
-			return kosttDaoService.findByLike(ktna);
+			returnList = kosttDaoService.findByLike(ktna);
 		} else {
-			return kosttDaoService.findAll(null);
+			returnList = kosttDaoService.findAll(null);
 		}
 		
+		session.invalidate();
+		return returnList;
+		
 	}	
+
 	
+	/**
+	 * Get KODTSF  nummerseries
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsKODTSF?user=SYSTEMA&kosfnv=a2
+	 */	
+	@RequestMapping(path = "/syjsKODTSF", method = RequestMethod.GET)
+	public List<KodtsfDao> getKodtsf(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "kosfnv", required = false) String kosfnv) {
+
+		checkUser(user);		
+		
+		List<KodtsfDao> returnList;
+		
+		if (kosfnv != null) {
+			returnList = kodtsfDaoService.findByLike(kosfnv);
+		} else {
+			returnList = kodtsfDaoService.findAll(null);
+		}
+		
+		session.invalidate();
+		return returnList;
+		
+		
+	}		
 	
 	private void checkUser(String user) {
 		if (bridfDaoService.getUserName(user) == null) {
@@ -186,4 +232,18 @@ public class ResponseOutputterController_KOSTA {
 		}
 	}
 
+	private List<KostaDao> get(Integer kabnr) {
+		List<KostaDao> list = new ArrayList<KostaDao>();
+		KostaDao qDao = new KostaDao();
+		qDao.setKabnr(kabnr);
+		KostaDao resultDao = kostaDaoService.find(qDao);
+		if (resultDao != null) {
+			list=  Arrays.asList(kostaDaoService.find(qDao));
+		} 
+		
+		return list;
+		
+		
+	}
+	
 }
