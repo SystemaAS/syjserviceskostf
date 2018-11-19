@@ -21,12 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 import no.systema.jservices.common.dao.KodtsfDao;
 import no.systema.jservices.common.dao.KostaDao;
 import no.systema.jservices.common.dao.KosttDao;
+import no.systema.jservices.common.dao.LevefDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 import no.systema.jservices.common.dao.services.KodtsfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
 import no.systema.jservices.common.dao.services.KosttDaoService;
+import no.systema.jservices.common.dao.services.LevefDaoService;
 import no.systema.jservices.common.dto.KostaDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
+import no.systema.jservices.common.json.PagingDto;
+import no.systema.jservices.common.json.Select2Dto;
 
 /**
  * This controller contribute with CRUD-logic on file/table KOSTA
@@ -47,6 +51,9 @@ public class ResponseOutputterController_KOSTA {
 
 	@Autowired
 	KodtsfDaoService kodtsfDaoService;		
+
+	@Autowired
+	LevefDaoService levefDaoService;		
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;
@@ -200,7 +207,7 @@ public class ResponseOutputterController_KOSTA {
 
 	
 	/**
-	 * Get KODTSF  nummerseries
+	 * Get KODTSF  att.kode
 	 * 
 	 * Example :
 	 * http://localhost:8080/syjserviceskostf/syjsKODTSF?user=SYSTEMA&kosfnv=a2
@@ -226,6 +233,43 @@ public class ResponseOutputterController_KOSTA {
 		
 	}		
 	
+	/**
+	 * Get KODTSF  att.kode
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsLEVEF?user=SYSTEMA&lnavn=transport
+	 */	
+	@RequestMapping(path = "/syjsLEVEF", method = RequestMethod.GET)
+	public PagingDto getLevef(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "lnavn", required = false) String lnavn) {
+
+		checkUser(user);		
+		
+		PagingDto pagingDto = new PagingDto();
+		List<Select2Dto> items = new ArrayList<Select2Dto>();
+		List<LevefDao> returnList;
+		
+		if (lnavn != null) {
+			returnList = levefDaoService.findByLike(lnavn);
+		} else {
+			returnList = levefDaoService.findAll(null);
+		}
+	
+		returnList.forEach(dao -> {
+			Select2Dto dto = new Select2Dto();
+			dto.setId(dao.getLevnr());
+			dto.setText(dao.getLnavn());
+			items.add(dto);
+		});
+		pagingDto.setItems(items);
+		pagingDto.setCountFiltered(returnList.size());
+		
+		session.invalidate();
+		return pagingDto;
+		
+	}		
+
 	private void checkUser(String user) {
 		if (bridfDaoService.getUserName(user) == null) {
 			throw new RuntimeException("ERROR: parameter, user, is not valid!");
