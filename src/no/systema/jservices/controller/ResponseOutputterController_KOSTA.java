@@ -2,7 +2,9 @@ package no.systema.jservices.controller;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -67,7 +69,7 @@ public class ResponseOutputterController_KOSTA {
 	 * http://localhost:8080/syjserviceskostf/syjsKOSTA?user=SYSTEMA&bilagsnr=10218&innregnr=2001057
 	 */
 	@RequestMapping(path = "/syjsKOSTA", method = RequestMethod.GET)
-	public List<KostaDao> searchKosta(@RequestParam(value = "user", required = true) String user,
+	public List<KostaDto> searchKosta(@RequestParam(value = "user", required = true) String user,
 			@RequestParam(value = "bilagsnr", required = false) Integer bilagsnr,
 			@RequestParam(value = "innregnr", required = false) Integer innregnr,
 			@RequestParam(value = "faktnr", required = false) String faktnr,
@@ -107,8 +109,32 @@ public class ResponseOutputterController_KOSTA {
 		logger.info("/syjsKOSTA, qDto="+ReflectionToStringBuilder.reflectionToString(qDto, ToStringStyle.MULTI_LINE_STYLE));
 		
 		
-		return kostaDaoService.findAllComplex(qDto);
+		List<KostaDao> queryResult = kostaDaoService.findAllComplex(qDto);
+		List<KostaDto> dtoResult = new ArrayList<KostaDto>();
+		
+		queryResult.forEach(dao -> {
+			KostaDto dto = KostaDto.get(dao);
+			dto.setLevnavn(getLevName(dao.getKalnr()));
+			dtoResult.add(dto);
+		});
+		
+		return dtoResult;
 
+	}
+
+	private String getLevName(Integer kalnr) {
+		LevefDao qDao = new LevefDao();
+		qDao.setLevnr(kalnr);
+		LevefDao resultDao = levefDaoService.find(qDao);
+		String name;
+
+		if (resultDao != null) {
+			name = resultDao.getLnavn();
+		} else {
+			name = "ikke funnet";
+		}
+		
+		return name;
 	}
 
 	/**
@@ -239,8 +265,9 @@ public class ResponseOutputterController_KOSTA {
 	 * Example :
 	 * http://localhost:8080/syjserviceskostf/syjsLEVEF?user=SYSTEMA&lnavn=transport
 	 */	
-	@RequestMapping(path = "/syjsLEVEF", method = RequestMethod.GET)
-	public PagingDto getLevef(HttpSession session,
+	@RequestMapping(path = "/syjsLEVEFOBS", method = RequestMethod.GET)
+	@Deprecated
+	public PagingDto searchLevefOBSOLETE(HttpSession session,
 									@RequestParam(value = "user", required = true) String user,
 									@RequestParam(value = "lnavn", required = false) String lnavn) {
 
@@ -251,7 +278,7 @@ public class ResponseOutputterController_KOSTA {
 		List<LevefDao> returnList;
 		
 		if (lnavn != null) {
-			returnList = levefDaoService.findByLike(lnavn);
+			returnList = levefDaoService.findByLike(0, lnavn);
 		} else {
 			returnList = levefDaoService.findAll(null);
 		}
@@ -270,19 +297,66 @@ public class ResponseOutputterController_KOSTA {
 		
 	}		
 
+
+	/**
+	 * Get KODTSF  att.kode
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsLEVEF?user=SYSTEMA&lnavn=transport
+	 */	
+	@RequestMapping(path = "/syjsLEVEF", method = RequestMethod.GET)
+	public List<LevefDao> searchLevef(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "levnr", required = false) Integer levnr,
+									@RequestParam(value = "lnavn", required = false) String lnavn) {
+
+		checkUser(user);		
+		
+		logger.info("/syjsLEVEF");
+		logger.info("levnr="+levnr+", lnavn="+lnavn);		
+		
+		
+		List<LevefDao> returnList = levefDaoService.findByLike(levnr, lnavn);
+		
+		session.invalidate();
+		return returnList;
+		
+	}			
+	
+	/**
+	 * Get Leverandor navn
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsLEVEF_NAME?user=SYSTEMA&levnr=1
+	 */	
+	@RequestMapping(path = "/syjsLEVEF_NAME", method = RequestMethod.GET)
+	public String getLevefName(HttpSession session,
+								@RequestParam(value = "user", required = true) String user,
+								@RequestParam(value = "levnr", required = true) Integer levnr) {
+
+		checkUser(user);		
+
+		String name = getLevName(levnr);
+		
+		session.invalidate();
+		return name;
+		
+	}		
+	
 	private void checkUser(String user) {
 		if (bridfDaoService.getUserName(user) == null) {
 			throw new RuntimeException("ERROR: parameter, user, is not valid!");
 		}
 	}
 
-	private List<KostaDao> get(Integer kabnr) {
-		List<KostaDao> list = new ArrayList<KostaDao>();
+	private List<KostaDto> get(Integer kabnr) {
+		List<KostaDto> list = new ArrayList<KostaDto>();
 		KostaDao qDao = new KostaDao();
 		qDao.setKabnr(kabnr);
 		KostaDao resultDao = kostaDaoService.find(qDao);
+		
 		if (resultDao != null) {
-			list=  Arrays.asList(kostaDaoService.find(qDao));
+			list=  Arrays.asList(KostaDto.get(kostaDaoService.find(qDao)));
 		} 
 		
 		return list;
