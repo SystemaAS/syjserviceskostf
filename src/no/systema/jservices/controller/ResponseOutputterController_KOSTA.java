@@ -2,9 +2,7 @@ package no.systema.jservices.controller;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -315,6 +313,10 @@ public class ResponseOutputterController_KOSTA {
 		logger.info("/syjsLEVEF");
 		logger.info("levnr="+levnr+", lnavn="+lnavn);		
 		
+		//Ugly short-circuit
+		if("NONE".equals(lnavn)) {
+			return new ArrayList<LevefDao>();
+		}
 		
 		List<LevefDao> returnList = levefDaoService.findByLike(levnr, lnavn);
 		
