@@ -29,8 +29,7 @@ import no.systema.jservices.common.dao.services.KosttDaoService;
 import no.systema.jservices.common.dao.services.LevefDaoService;
 import no.systema.jservices.common.dto.KostaDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
-import no.systema.jservices.common.json.PagingDto;
-import no.systema.jservices.common.json.Select2Dto;
+import no.systema.jservices.common.util.DateTimeManager;
 
 /**
  * This controller contribute with CRUD-logic on file/table KOSTA
@@ -63,6 +62,8 @@ public class ResponseOutputterController_KOSTA {
 	 * 
 	 * Note: Using usecase names of values instead of column-names, for tracebility
 	 * 
+	 * Dto i used, in favor of Dao, to avoid roundtriping for more data. eg. levnamn.
+	 * 
 	 * Example :
 	 * http://localhost:8080/syjserviceskostf/syjsKOSTA?user=SYSTEMA&bilagsnr=10218&innregnr=2001057
 	 */
@@ -86,9 +87,9 @@ public class ResponseOutputterController_KOSTA {
 
 		checkUser(user);
 
-		if (innregnr != null) {
-			return get(innregnr);
-		}
+//		if (innregnr != null) {
+//			return getKostaAsList(innregnr);
+//		}
 		
 		
 		KostaDto qDto = new KostaDto();
@@ -120,21 +121,29 @@ public class ResponseOutputterController_KOSTA {
 
 	}
 
-	private String getLevName(Integer kalnr) {
-		LevefDao qDao = new LevefDao();
-		qDao.setLevnr(kalnr);
-		LevefDao resultDao = levefDaoService.find(qDao);
-		String name;
+	/**
+	 * Get specific KOSTA 
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsKOSTA_GET?user=SYSTEMA&innregnr=1
+	 */	
+	@RequestMapping(path = "/syjsKOSTA_GET", method = RequestMethod.GET)
+	public KostaDto getKosta(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "innregnr", required = true) Integer innregnr) {
 
-		if (resultDao != null) {
-			name = resultDao.getLnavn();
-		} else {
-			name = "ikke funnet";
-		}
+		checkUser(user);		
 		
-		return name;
-	}
-
+		logger.info("/syjsKOSTA_GET");
+		logger.info("innregnr="+innregnr);
+		
+		KostaDto dto = getKosta(innregnr);
+		
+		session.invalidate();
+		return dto;
+		
+	}	
+		
 	/**
 	 * Update Database DML operations File: KOSTA
 	 * 
@@ -257,47 +266,9 @@ public class ResponseOutputterController_KOSTA {
 		
 	}		
 	
-	/**
-	 * Get KODTSF  att.kode
-	 * 
-	 * Example :
-	 * http://localhost:8080/syjserviceskostf/syjsLEVEF?user=SYSTEMA&lnavn=transport
-	 */	
-	@RequestMapping(path = "/syjsLEVEFOBS", method = RequestMethod.GET)
-	@Deprecated
-	public PagingDto searchLevefOBSOLETE(HttpSession session,
-									@RequestParam(value = "user", required = true) String user,
-									@RequestParam(value = "lnavn", required = false) String lnavn) {
-
-		checkUser(user);		
-		
-		PagingDto pagingDto = new PagingDto();
-		List<Select2Dto> items = new ArrayList<Select2Dto>();
-		List<LevefDao> returnList;
-		
-		if (lnavn != null) {
-			returnList = levefDaoService.findByLike(0, lnavn);
-		} else {
-			returnList = levefDaoService.findAll(null);
-		}
-	
-		returnList.forEach(dao -> {
-			Select2Dto dto = new Select2Dto();
-			dto.setId(dao.getLevnr());
-			dto.setText(dao.getLnavn());
-			items.add(dto);
-		});
-		pagingDto.setItems(items);
-		pagingDto.setCountFiltered(returnList.size());
-		
-		session.invalidate();
-		return pagingDto;
-		
-	}		
-
 
 	/**
-	 * Get KODTSF  att.kode
+	 * Search LEVEF -   leveradorer
 	 * 
 	 * Example :
 	 * http://localhost:8080/syjserviceskostf/syjsLEVEF?user=SYSTEMA&lnavn=transport
@@ -326,6 +297,31 @@ public class ResponseOutputterController_KOSTA {
 	}			
 	
 	/**
+	 * Get specific LEVEF -   leveradorer
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsLEVEF_GET?user=SYSTEMA&levnr=1
+	 */	
+	@RequestMapping(path = "/syjsLEVEF_GET", method = RequestMethod.GET)
+	public LevefDao getLevef(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "levnr", required = true) Integer levnr) {
+
+		checkUser(user);		
+		
+		logger.info("/syjsLEVEF");
+		logger.info("levnr="+levnr);
+		
+		LevefDao dao = getLevef(levnr);
+		
+		session.invalidate();
+		return dao;
+		
+	}	
+	
+	
+	
+	/**
 	 * Get Leverandor navn
 	 * 
 	 * Example :
@@ -351,19 +347,56 @@ public class ResponseOutputterController_KOSTA {
 		}
 	}
 
-	private List<KostaDto> get(Integer kabnr) {
+	private List<KostaDto> getKostaAsList(Integer kabnr) {
 		List<KostaDto> list = new ArrayList<KostaDto>();
+		KostaDao resultDao = getKosta(kabnr);
+		
+		if (resultDao != null) {
+			list=  Arrays.asList(KostaDto.get(kostaDaoService.find(resultDao)));
+		} 
+		
+		return list;
+		
+	}
+
+	private KostaDto getKosta(Integer kabnr) {
 		KostaDao qDao = new KostaDao();
 		qDao.setKabnr(kabnr);
 		KostaDao resultDao = kostaDaoService.find(qDao);
 		
 		if (resultDao != null) {
-			list=  Arrays.asList(KostaDto.get(kostaDaoService.find(qDao)));
-		} 
+			KostaDto dto = KostaDto.get(resultDao);
+			dto.setLevnavn(getLevName(resultDao.getKalnr()));
+			dto.setOpp_dato(DateTimeManager.getDateTime(resultDao.getKadte(),resultDao.getKatme()));
+			dto.setReg_dato(DateTimeManager.getDateTime(resultDao.getKadtr(),resultDao.getKatdr()));	
+			
+			return dto;
+		} else {
+			return null;
+		}
 		
-		return list;
+	}	
+	
+	private LevefDao getLevef(Integer kalnr) {
+		LevefDao qDao = new LevefDao();
+		qDao.setLevnr(kalnr);
+
+		return levefDaoService.find(qDao);
 		
+	}	
+	
+	
+	private String getLevName(Integer kalnr) {
+		LevefDao resultDao = getLevef(kalnr);
+		String name;
+
+		if (resultDao != null) {
+			name = resultDao.getLnavn();
+		} else {
+			name = "ikke funnet";
+		}
 		
+		return name;
 	}
 	
 }
