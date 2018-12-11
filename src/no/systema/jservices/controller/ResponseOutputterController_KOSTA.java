@@ -1,7 +1,8 @@
 package no.systema.jservices.controller;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -29,7 +30,6 @@ import no.systema.jservices.common.dao.services.KosttDaoService;
 import no.systema.jservices.common.dao.services.LevefDaoService;
 import no.systema.jservices.common.dto.KostaDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
-import no.systema.jservices.common.util.DateTimeManager;
 
 /**
  * This controller contribute with CRUD-logic on file/table KOSTA
@@ -87,28 +87,20 @@ public class ResponseOutputterController_KOSTA {
 
 		checkUser(user);
 
-//		if (innregnr != null) {
-//			return getKostaAsList(innregnr);
-//		}
-		
-		
-		KostaDto qDto = new KostaDto();
-		qDto.setKabnr(innregnr);
-		qDto.setKabnr2(bilagsnr);
-		qDto.setKafnr(faktnr);
-		qDto.setKalnr(levnr);
-		qDto.setKasg(attkode);
-		qDto.setKatxt(komment);
-		qDto.setKabdt(fradato);
-		qDto.setKbrekl(reklamasjon);
-		qDto.setKast(status);
-		qDto.setFskode(fskode);
-		qDto.setFssok(fssok);
+		KostaDao qDao = new KostaDao();
+		qDao.setKabnr(innregnr);
+		qDao.setKabnr2(bilagsnr);
+		qDao.setKafnr(faktnr);
+		qDao.setKalnr(levnr);
+		qDao.setKasg(attkode);
+		qDao.setKatxt(komment);
+		qDao.setKabdt(fradato);
+		qDao.setKast(status);
 	
-		logger.info("/syjsKOSTA, qDto="+ReflectionToStringBuilder.reflectionToString(qDto, ToStringStyle.MULTI_LINE_STYLE));
+		logger.info("/syjsKOSTA, qDto="+ReflectionToStringBuilder.reflectionToString(qDao, ToStringStyle.MULTI_LINE_STYLE));
 		
 		
-		List<KostaDao> queryResult = kostaDaoService.findAllComplex(qDto);
+		List<KostaDao> queryResult = kostaDaoService.findAllComplex(qDao, reklamasjon, fskode, fssok);
 		List<KostaDto> dtoResult = new ArrayList<KostaDto>();
 		
 		queryResult.forEach(dao -> {
@@ -185,9 +177,9 @@ public class ResponseOutputterController_KOSTA {
 				if (kttyp == null) {
 					throw new RuntimeException("kttyp can not be null.");
 				}
-				resultDao = kostaDaoService.create(dao, kttyp);
+				resultDao = createKosta(dao, kttyp, user);
 			} else if ("U".equals(mode)) {
-				resultDao = kostaDaoService.update(dao);
+				resultDao = updateKosta(dao, user);
 			}
 			if (resultDao == null) {
 				errMsg = "ERROR on UPDATE ";
@@ -319,8 +311,6 @@ public class ResponseOutputterController_KOSTA {
 		
 	}	
 	
-	
-	
 	/**
 	 * Get Leverandor navn
 	 * 
@@ -347,18 +337,41 @@ public class ResponseOutputterController_KOSTA {
 		}
 	}
 
-	private List<KostaDto> getKostaAsList(Integer kabnr) {
-		List<KostaDto> list = new ArrayList<KostaDto>();
-		KostaDao resultDao = getKosta(kabnr);
+	
+	private KostaDao createKosta(KostaDao dao, String kttyp, String user) {
+		addAudit(dao, user);
 		
-		if (resultDao != null) {
-			list=  Arrays.asList(KostaDto.get(kostaDaoService.find(resultDao)));
-		} 
-		
-		return list;
+		return kostaDaoService.create(dao, kttyp);	
 		
 	}
+	
+	private KostaDao updateKosta(KostaDao dao, String user) {
+		addAudit(dao, user);
+		
+		return kostaDaoService.update(dao);	
+		
+	}
+	
+	
+	private void addAudit(KostaDao dao, String user) {
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); 
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HHmmss");
+		
+		LocalDateTime now = LocalDateTime.now();
+		String nowDate = now.format(dateFormatter);
+		String nowTime = now.format(timeFormatter);
 
+		int kadte = Integer.valueOf(nowDate);
+		int katme = Integer.valueOf(nowTime);		
+				
+		dao.setKadte(kadte);
+		dao.setKatme(katme);
+		
+		String kauser = bridfDaoService.getUserName(user);
+		dao.setKauser(kauser);
+		
+	}
+	
 	private KostaDto getKosta(Integer kabnr) {
 		KostaDao qDao = new KostaDao();
 		qDao.setKabnr(kabnr);
@@ -367,9 +380,6 @@ public class ResponseOutputterController_KOSTA {
 		if (resultDao != null) {
 			KostaDto dto = KostaDto.get(resultDao);
 			dto.setLevnavn(getLevName(resultDao.getKalnr()));
-			dto.setOpp_dato(DateTimeManager.getDateTime(resultDao.getKadte(),resultDao.getKatme()));
-			dto.setReg_dato(DateTimeManager.getDateTime(resultDao.getKadtr(),resultDao.getKatdr()));	
-			
 			return dto;
 		} else {
 			return null;
