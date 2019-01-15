@@ -155,11 +155,13 @@ public class ResponseOutputterController_KOSTA {
 		String errMsg = null;
 		String status = null;
 		StringBuffer dbErrorStackTrace = null;
-
+		
+		logger.info("Inside syjsKOSTA_U.do");
+		logger.info("kttyp="+kttyp);
+		
 		checkUser(user);
 
 		try {
-			logger.info("Inside syjsKOSTA_U.do");
 			String mode = request.getParameter("mode");
 			errMsg = "";
 			status = "ok";
@@ -174,8 +176,8 @@ public class ResponseOutputterController_KOSTA {
 			if ("D".equals(mode)) {
 				kostaDaoService.delete(dao);
 			} else if ("A".equals(mode)) {
-				if (kttyp == null) {
-					throw new RuntimeException("kttyp can not be null.");
+				if (kttyp.isEmpty()) {
+					kttyp = "Ø"; //default
 				}
 				resultDao = createKosta(dao, kttyp, user);
 			} else if ("U".equals(mode)) {
@@ -347,11 +349,13 @@ public class ResponseOutputterController_KOSTA {
 	
 	private KostaDao updateKosta(KostaDao dao, String user) {
 		addAudit(dao, user);
+		if (dao.getKaffdt() == null) {
+			dao.setKaffdt(dao.getKabdt());
+		}
 		
 		return kostaDaoService.update(dao);	
 		
 	}
-	
 	
 	private void addAudit(KostaDao dao, String user) {
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd"); 
