@@ -1,5 +1,6 @@
 package no.systema.jservices.controller;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import no.systema.jservices.common.dao.services.KosttDaoService;
 import no.systema.jservices.common.dao.services.LevefDaoService;
 import no.systema.jservices.common.dto.KostaDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
+import no.systema.jservices.controller.rules.KOSTA_U;
 
 /**
  * This controller contribute with CRUD-logic on file/table KOSTA
@@ -56,6 +58,9 @@ public class ResponseOutputterController_KOSTA {
 	
 	@Autowired
 	private BridfDaoService bridfDaoService;
+	
+	@Autowired
+	private KOSTA_U rulerLord;
 
 	/**
 	 * Search in KOSTA
@@ -72,7 +77,7 @@ public class ResponseOutputterController_KOSTA {
 			@RequestParam(value = "bilagsnr", required = false) Integer bilagsnr,
 			@RequestParam(value = "innregnr", required = false) Integer innregnr,
 			@RequestParam(value = "faktnr", required = false) String faktnr,
-			@RequestParam(value = "levnr", required = false) Integer levnr,
+			@RequestParam(value = "levnr", required = false) BigDecimal levnr,
 			@RequestParam(value = "attkode", required = false) String attkode,
 			@RequestParam(value = "komment", required = false) String komment,
 			@RequestParam(value = "fradato", required = false) Integer fradato,
@@ -105,7 +110,7 @@ public class ResponseOutputterController_KOSTA {
 		
 		queryResult.forEach(dao -> {
 			KostaDto dto = KostaDto.get(dao);
-			dto.setLevnavn(getLevName(dao.getKalnr()));
+			dto.setLevnavn(getLevName(dao.getKalnr().intValue()));
 			dtoResult.add(dto);
 		});
 		
@@ -150,8 +155,7 @@ public class ResponseOutputterController_KOSTA {
 							HttpSession session,
 							HttpServletRequest request) {
 		JsonResponseWriter2<KostaDao> jsonWriter = new JsonResponseWriter2<KostaDao>();
-		StringBuffer sb = new StringBuffer();
-		String userName = null;
+		StringBuffer error = new StringBuffer();
 		String errMsg = null;
 		String status = null;
 		StringBuffer dbErrorStackTrace = null;
@@ -171,37 +175,60 @@ public class ResponseOutputterController_KOSTA {
 			ServletRequestDataBinder binder = new ServletRequestDataBinder(dao);
 			binder.bind(request);
 
-			// TODO: rulerLord
-
 			if ("D".equals(mode)) {
+				//Delete
 				kostaDaoService.delete(dao);
 			} else if ("A".equals(mode)) {
-				if (kttyp.isEmpty()) {
+				if (kttyp == null || kttyp.isEmpty()) {
 					kttyp = "Ø"; //default
 				}
-				resultDao = createKosta(dao, kttyp, user);
+				//TODO
+				if (rulerLord.isValidInput(dao, user, mode, error, dbErrorStackTrace)) {
+					//Create
+					resultDao = createKosta(dao, kttyp, user);
+					
+				} else {
+					errMsg = "ERROR on ADD: invalid rulerLord, error="+error.toString();
+					status = "error";
+					error.append(jsonWriter.setJsonSimpleErrorResult(user, errMsg, status, dbErrorStackTrace));
+					logger.error(error);
+				}
 			} else if ("U".equals(mode)) {
-				resultDao = updateKosta(dao, user);
+
+				//TODO
+				if (rulerLord.isValidInput(dao, user, mode, error, dbErrorStackTrace)) {
+					//Update
+					resultDao = updateKosta(dao, user);
+					
+				} else {
+					errMsg = "ERROR on UPDATE: invalid rulerLord, error="+error.toString();
+					status = "error";
+					error.append(jsonWriter.setJsonSimpleErrorResult(user, errMsg, status, dbErrorStackTrace));
+					logger.error(error);
+				}				
+				
+			
 			}
 			if (resultDao == null) {
-				errMsg = "ERROR on UPDATE ";
-				status = "error ";
+				errMsg = error.toString();
+				logger.error("Error:"+ errMsg);
+				status = "error";
 				dbErrorStackTrace.append("Could not add/update dao=" + ReflectionToStringBuilder.toString(dao));
-				sb.append(jsonWriter.setJsonSimpleErrorResult(userName, errMsg, status, dbErrorStackTrace));
+				error.append(jsonWriter.setJsonSimpleErrorResult(user, errMsg, status, dbErrorStackTrace));
 			} else {
 				// OK UPDATE
-				sb.append(jsonWriter.setJsonResult_Common_GetComposite(userName, resultDao));
+				error.append(jsonWriter.setJsonResult_Common_GetComposite(user, resultDao));
 			}
 
 		} catch (Exception e) {
-			errMsg = "ERROR on UPDATE ";
-			status = "error ";
+			errMsg = "ERROR : ";
+			status = "error";
 			logger.info("Error:", e);
 			dbErrorStackTrace.append(e.getMessage());
-			sb.append(jsonWriter.setJsonSimpleErrorResult(userName, errMsg, status, dbErrorStackTrace));
+			error.append(jsonWriter.setJsonSimpleErrorResult(user, errMsg, status, dbErrorStackTrace));
 		}
 		session.invalidate();
-		return sb.toString();
+		return error.toString();
 
 	}
 
@@ -350,7 +377,7 @@ public class ResponseOutputterController_KOSTA {
 	private KostaDao updateKosta(KostaDao dao, String user) {
 		addAudit(dao, user);
 		if (dao.getKaffdt() == null) {
-			dao.setKaffdt(dao.getKabdt());
+			dao.setKaffdt(new BigDecimal(dao.getKabdt()));
 		}
 		
 		return kostaDaoService.update(dao);	
@@ -383,7 +410,7 @@ public class ResponseOutputterController_KOSTA {
 		
 		if (resultDao != null) {
 			KostaDto dto = KostaDto.get(resultDao);
-			dto.setLevnavn(getLevName(resultDao.getKalnr()));
+			dto.setLevnavn(getLevName(resultDao.getKalnr().intValue()));
 			return dto;
 		} else {
 			return null;
