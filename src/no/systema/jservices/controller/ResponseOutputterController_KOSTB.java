@@ -1,5 +1,6 @@
 package no.systema.jservices.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,9 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import no.systema.jservices.common.dao.HeadfDao;
 import no.systema.jservices.common.dao.KostbDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
+import no.systema.jservices.common.dao.services.HeadfDaoService;
 import no.systema.jservices.common.dao.services.KostbDaoService;
+import no.systema.jservices.common.dto.KostbDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
 
 /**
@@ -37,6 +41,52 @@ public class ResponseOutputterController_KOSTB {
 	@Autowired
 	private BridfDaoService bridfDaoService;
 
+	@Autowired
+	HeadfDaoService headfDaoService;
+
+	/**
+	 * Search in KOSTA
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsKOSTB_XTRA?user=SYSTEMA&kbbnr=2001075
+	 */
+	@RequestMapping(path = "/syjsKOSTB_XTRA", method = RequestMethod.GET)
+	public List<KostbDto> getKostbInflated(	@RequestParam(value = "user", required = true) String user,
+											@RequestParam(value = "kbbnr", required = true) Integer kbbnr) {
+
+		logger.info("/syjsKOSTB_XTRA");
+
+		checkUser(user);
+		
+		List<KostbDto> dtoList = new ArrayList<KostbDto>();
+		List<KostbDao> daoList = kostbDaoService.findByKbbnr(kbbnr);
+
+		daoList.forEach(dao -> {
+			KostbDto dto = new KostbDto();
+			dto = KostbDto.get(dao);
+			HeadfDao headf = headfDaoService.find(dao.getKbavd(), dao.getKbopd());
+			
+			//TODO 
+			dto.setOt(headf.getHeot());  
+			dto.setFra(headf.getHefr());
+			dto.setVal(headf.getTrverv());
+			dto.setVkt1(String.valueOf(headf.getHevkt()));
+//			dto.setVkt2(?);
+//			dto.setSk(?);
+//			dto.setBusjett(?);
+//			dto.setDiff(?);
+//			dto.setGren(?);
+			dto.setAnt(String.valueOf(headf.getHent()));
+			
+			dtoList.add(dto);
+			
+		});
+			
+		return dtoList;
+
+	}	
+	
+	
 	/**
 	 * Search in KOSTA
 	 * 

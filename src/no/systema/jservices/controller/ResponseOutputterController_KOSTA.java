@@ -136,6 +136,8 @@ public class ResponseOutputterController_KOSTA {
 		
 		KostaDto dto = getKosta(innregnr);
 		
+		dto.setLevnavn(getLevName(new Integer(dto.getKalnr())));
+		
 		session.invalidate();
 		return dto;
 		
