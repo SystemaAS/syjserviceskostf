@@ -22,14 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import no.systema.jservices.common.dao.KodtsfDao;
 import no.systema.jservices.common.dao.KostaDao;
+import no.systema.jservices.common.dao.KostbDao;
 import no.systema.jservices.common.dao.KosttDao;
 import no.systema.jservices.common.dao.LevefDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
 import no.systema.jservices.common.dao.services.KodtsfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
+import no.systema.jservices.common.dao.services.KostbDaoService;
 import no.systema.jservices.common.dao.services.KosttDaoService;
 import no.systema.jservices.common.dao.services.LevefDaoService;
 import no.systema.jservices.common.dto.KostaDto;
+import no.systema.jservices.common.dto.KostbDto;
 import no.systema.jservices.common.json.JsonResponseWriter2;
 import no.systema.jservices.controller.rules.KOSTA_U;
 
@@ -47,6 +50,9 @@ public class ResponseOutputterController_KOSTA {
 	@Autowired
 	KostaDaoService kostaDaoService;
 
+	@Autowired
+	KostbDaoService kostbDaoService;	
+	
 	@Autowired
 	KosttDaoService kosttDaoService;	
 
@@ -136,7 +142,12 @@ public class ResponseOutputterController_KOSTA {
 		
 		KostaDto dto = getKosta(innregnr);
 		
+		if (dto != null) {
+			logger.error("dto is null on innregnr="+innregnr);
+		}
 		dto.setLevnavn(getLevName(new Integer(dto.getKalnr())));
+		dto.setFordelt(getFordelt(innregnr));	
+		
 		
 		session.invalidate();
 		return dto;
@@ -417,6 +428,18 @@ public class ResponseOutputterController_KOSTA {
 		} else {
 			return null;
 		}
+		
+	}	
+
+	private String getFordelt(Integer kabnr) {
+		logger.info("::getFordelt::, kabnr="+kabnr);
+		double fordelt = kostbDaoService.getFordelt(kabnr);
+	
+		logger.info("fordelt="+fordelt);
+		
+		
+		
+		return String.valueOf(fordelt);
 		
 	}	
 	
