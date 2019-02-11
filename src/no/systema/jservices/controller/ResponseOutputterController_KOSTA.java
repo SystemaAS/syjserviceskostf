@@ -139,6 +139,11 @@ public class ResponseOutputterController_KOSTA {
 		
 		logger.info("/syjsKOSTA_GET");
 		logger.info("innregnr="+innregnr);
+	
+		if (innregnr == null || innregnr == 0 ) {
+			logger.error("innregnr can not be 0");
+			throw new RuntimeException("innregnr can not be null");
+		}
 		
 		KostaDto dto = getKosta(innregnr);
 		

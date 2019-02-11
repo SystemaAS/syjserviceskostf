@@ -48,13 +48,15 @@ public class ResponseOutputterController_KOSTB {
 	 * Search in KOSTA
 	 * 
 	 * Example :
-	 * http://localhost:8080/syjserviceskostf/syjsKOSTB_XTRA?user=SYSTEMA&kbbnr=2001075
+	 * http://localhost:8080/syjserviceskostf/syjsKOSTB_XTRA?user=SYSTEMA&kbbnr=2001114
 	 */
 	@RequestMapping(path = "/syjsKOSTB_XTRA", method = RequestMethod.GET)
 	public List<KostbDto> getKostbInflated(	@RequestParam(value = "user", required = true) String user,
 											@RequestParam(value = "kbbnr", required = true) Integer kbbnr) {
 
 		logger.info("/syjsKOSTB_XTRA");
+		logger.info("kbbnr="+kbbnr);
+		
 
 		checkUser(user);
 		
@@ -88,23 +90,64 @@ public class ResponseOutputterController_KOSTB {
 	
 	
 	/**
-	 * Search in KOSTA
+	 * Get List of KOSTB
 	 * 
 	 * Example :
-	 * http://localhost:8080/syjserviceskostf/syjsKOSTB?user=SYSTEMA&innregnr=2001075
+	 * http://localhost:8080/syjserviceskostf/syjsKOSTB_LIST?user=SYSTEMA&kbbnr=2001114
 	 */
-	@RequestMapping(path = "/syjsKOSTB", method = RequestMethod.GET)
-	public List<KostbDao> getKostb(	@RequestParam(value = "user", required = true) String user,
+	@RequestMapping(path = "/syjsKOSTB_LIST", method = RequestMethod.GET)
+	public List<KostbDto> getKostbList(	@RequestParam(value = "user", required = true) String user,
 									@RequestParam(value = "kbbnr", required = true) Integer kbbnr) {
 
 		logger.info("/syjsKOSTB");
 
 		checkUser(user);
 
-		return kostbDaoService.findByKbbnr(kbbnr);
+		List<KostbDao> daoList = kostbDaoService.findByKbbnr(kbbnr);
+		List<KostbDto> dtoList = new ArrayList<KostbDto>();
+		
+		daoList.forEach(dao -> {
+			dtoList.add(KostbDto.get(dao));
+		});
+		
+		return dtoList;
 
 	}
 
+	/**
+	 * Get specific KOSTB 
+	 * 
+	 * Note: Using RRN. No keys in KOSTB
+	 * 
+	 * Example :
+	 * http://localhost:8080/syjserviceskostf/syjsKOSTB_GET?user=SYSTEMA&rrn=2
+	 */	
+	@RequestMapping(path = "/syjsKOSTB_GET", method = RequestMethod.GET)
+	public KostbDto getKostb(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "rrn", required = true) Integer rrn) {
+
+		checkUser(user);		
+		
+		logger.info("/syjsKOSTA_GET");
+		logger.info("rrn="+rrn);
+	
+		if (rrn == 0 ) {
+			logger.error("rrn can not be null");
+			throw new RuntimeException("rrn can not be null");
+		}
+		
+		KostbDto dto = getKostb(rrn);
+		
+		if (dto == null) {
+			logger.error("dto is null on rrn="+rrn);
+		}
+		
+		session.invalidate();
+		return dto;
+		
+	}		
+	
 	/**
 	 * Update Database DML operations File: KOSTA
 	 * 
@@ -125,8 +168,10 @@ public class ResponseOutputterController_KOSTB {
 
 		checkUser(user);
 
+		logger.info("Inside syjsKOSTB_U.do");
+		
+		
 		try {
-			logger.info("Inside syjsKOSTB_U.do");
 			String mode = request.getParameter("mode");
 			errMsg = "";
 			status = "ok";
@@ -138,11 +183,18 @@ public class ResponseOutputterController_KOSTB {
 
 			// TODO: rulerLord
 
+			
 			if ("D".equals(mode)) {
 				kostbDaoService.delete(dao);
 			} else if ("A".equals(mode)) {
+	
+				logger.info("Create...");
+				
 				resultDao = kostbDaoService.create(dao);
 			} else if ("U".equals(mode)) {
+				
+				logger.info("Update...");
+				
 				resultDao = kostbDaoService.update(dao);
 			}
 			if (resultDao == null) {
@@ -158,7 +210,7 @@ public class ResponseOutputterController_KOSTB {
 		} catch (Exception e) {
 			errMsg = "ERROR on UPDATE ";
 			status = "error ";
-			logger.info("Error:", e);
+			logger.error("Error:", e);
 			dbErrorStackTrace.append(e.getMessage());
 			sb.append(jsonWriter.setJsonSimpleErrorResult(userName, errMsg, status, dbErrorStackTrace));
 		}
@@ -167,6 +219,15 @@ public class ResponseOutputterController_KOSTB {
 
 	}
 
+	
+	private KostbDto getKostb(Integer rrn) {
+		KostbDao resultDao = kostbDaoService.findByRRN(rrn);
+		KostbDto dto = KostbDto.get(resultDao);
+		
+		return dto;
+		
+	}		
+	
 	private void checkUser(String user) {
 		if (bridfDaoService.getUserName(user) == null) {
 			throw new RuntimeException("ERROR: parameter, user, is not valid!");
