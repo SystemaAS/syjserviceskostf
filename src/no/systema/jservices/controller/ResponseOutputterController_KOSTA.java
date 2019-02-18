@@ -20,12 +20,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import no.systema.jservices.common.dao.KodtgeDao;
 import no.systema.jservices.common.dao.KodtsfDao;
 import no.systema.jservices.common.dao.KostaDao;
 import no.systema.jservices.common.dao.KosttDao;
 import no.systema.jservices.common.dao.LevefDao;
 import no.systema.jservices.common.dao.ValufDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
+import no.systema.jservices.common.dao.services.KodtgeDaoService;
 import no.systema.jservices.common.dao.services.KodtsfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
 import no.systema.jservices.common.dao.services.KostbDaoService;
@@ -58,6 +60,10 @@ public class ResponseOutputterController_KOSTA {
 
 	@Autowired
 	KodtsfDaoService kodtsfDaoService;		
+	
+	@Autowired
+	KodtgeDaoService kodtgeDaoService;
+	
 
 	@Autowired
 	LevefDaoService levefDaoService;	
@@ -347,8 +353,7 @@ public class ResponseOutputterController_KOSTA {
 	@RequestMapping(path = "/syjs_VALUF", method = RequestMethod.GET)
 	public List<ValufDao> searchValuf(HttpSession session,
 									@RequestParam(value = "user", required = true) String user,
-									@RequestParam(value = "valkod", required = false) String valkod,
-									@RequestParam(value = "xxx", required = false) String xxx) {
+									@RequestParam(value = "valkod", required = false) String valkod) {
 
 		checkUser(user);		
 		
@@ -368,7 +373,35 @@ public class ResponseOutputterController_KOSTA {
 		
 	}		
 	
-	
+
+	/**
+	 * Search KODTGE -   gebyrkoder
+	 * 
+	 * Example :
+	 * specific http://localhost:8080/syjserviceskostf/syjsKODTGE?user=SYSTEMA&kgekod=FRA
+	 */	
+	@RequestMapping(path = "/syjsKODTGE", method = RequestMethod.GET)
+	public List<KodtgeDao> searchKodtge(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "kgekod", required = false) String kgekod) {
+
+		checkUser(user);		
+		
+		logger.info("/syjsKODTGE");
+		logger.info("kgekod="+kgekod);	
+		
+		List<KodtgeDao> returnList;
+		
+		if (kgekod!= null) {
+			returnList = kodtgeDaoService.findByLike(kgekod);
+		} else {
+			returnList = kodtgeDaoService.findAll(null);
+		}
+		
+		session.invalidate();
+		return returnList;
+		
+	}	
 	
 	
 	/**
@@ -473,13 +506,7 @@ public class ResponseOutputterController_KOSTA {
 	}	
 
 	private String getFordelt(Integer kabnr) {
-		logger.info("::getFordelt::, kabnr="+kabnr);
 		double fordelt = kostbDaoService.getFordelt(kabnr);
-	
-		logger.info("fordelt="+fordelt);
-		
-		
-		
 		return String.valueOf(fordelt);
 		
 	}	
