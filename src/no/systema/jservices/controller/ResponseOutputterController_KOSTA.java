@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import no.systema.jservices.common.dao.FriskkDao;
+import no.systema.jservices.common.dao.KodfriDao;
 import no.systema.jservices.common.dao.KodtgeDao;
 import no.systema.jservices.common.dao.KodtsfDao;
 import no.systema.jservices.common.dao.KostaDao;
@@ -27,6 +29,8 @@ import no.systema.jservices.common.dao.KosttDao;
 import no.systema.jservices.common.dao.LevefDao;
 import no.systema.jservices.common.dao.ValufDao;
 import no.systema.jservices.common.dao.services.BridfDaoService;
+import no.systema.jservices.common.dao.services.FriskkDaoService;
+import no.systema.jservices.common.dao.services.KodfriDaoService;
 import no.systema.jservices.common.dao.services.KodtgeDaoService;
 import no.systema.jservices.common.dao.services.KodtsfDaoService;
 import no.systema.jservices.common.dao.services.KostaDaoService;
@@ -63,8 +67,13 @@ public class ResponseOutputterController_KOSTA {
 	
 	@Autowired
 	KodtgeDaoService kodtgeDaoService;
-	
 
+	@Autowired
+	FriskkDaoService friskkDaoService;		
+
+	@Autowired
+	KodfriDaoService kodfriDaoService;		
+	
 	@Autowired
 	LevefDaoService levefDaoService;	
 	
@@ -156,8 +165,9 @@ public class ResponseOutputterController_KOSTA {
 		
 		KostaDto dto = getKosta(innregnr);
 		
-		if (dto != null) {
+		if (dto == null) {
 			logger.error("dto is null on innregnr="+innregnr);
+			throw new RuntimeException("dto is null on innregnr="+innregnr);
 		}
 		dto.setLevnavn(getLevName(new Integer(dto.getKalnr())));
 		dto.setFordelt(getFordelt(innregnr));	
@@ -403,6 +413,55 @@ public class ResponseOutputterController_KOSTA {
 		
 	}	
 	
+	/**
+	 * FRISKK -   frie sökveier
+	 * 
+	 * Example :
+	 * specific http://localhost:8080/syjserviceskostf/syjsFRISKK_LIST?user=SYSTEMA&fsbnr=2000356
+	 */	
+	@RequestMapping(path = "/syjsFRISKK_LIST", method = RequestMethod.GET)
+	public List<FriskkDao> searchFriskk(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "fsbnr", required = true) Integer fsbnr) {
+
+		checkUser(user);		
+		
+		logger.info("/syjsFRISKK");
+		logger.info("fsbnr="+fsbnr);	
+		
+		session.invalidate();
+		return friskkDaoService.findByFsbnr(fsbnr);
+		
+	}	
+
+	/**
+	 * Search FRISKK -   frie sökveier
+	 * 
+	 * Example :
+	 * specific http://localhost:8080/syjserviceskostf/syjsKODFRI?user=SYSTEMA&kfsotx=moderopp
+	 */	
+	@RequestMapping(path = "/syjsKODFRI", method = RequestMethod.GET)
+	public List<KodfriDao> searchKodfri(HttpSession session,
+									@RequestParam(value = "user", required = true) String user,
+									@RequestParam(value = "kfsotx", required = false) String kfsotx) {
+
+		checkUser(user);		
+		
+		logger.info("/syjsKODFRI");
+		logger.info("kfsotx="+kfsotx);	
+		
+		List<KodfriDao> returnList;
+		
+		if (kfsotx!= null) {
+			returnList = kodfriDaoService.findByLike(kfsotx);
+		} else {
+			returnList = kodfriDaoService.findAll(null);
+		}
+		
+		session.invalidate();
+		return returnList;
+		
+	}		
 	
 	/**
 	 * Get specific LEVEF -   leveradorer

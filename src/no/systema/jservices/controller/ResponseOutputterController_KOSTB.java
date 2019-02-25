@@ -69,16 +69,18 @@ public class ResponseOutputterController_KOSTB {
 			HeadfDao headf = headfDaoService.find(dao.getKbavd(), dao.getKbopd());
 			
 			//TODO 
-			dto.setOt(headf.getHeot());  
-			dto.setFra(headf.getHefr());
-			dto.setVal(headf.getTrverv());
-			dto.setVkt1(String.valueOf(headf.getHevkt()));
+			if (headf != null) {
+				dto.setOt(headf.getHeot());  
+				dto.setFra(headf.getHefr());
+				dto.setVal(headf.getTrverv());
+				dto.setVkt1(String.valueOf(headf.getHevkt()));
+				dto.setAnt(String.valueOf(headf.getHent()));
+			} 
 //			dto.setVkt2(?);
 //			dto.setSk(?);
 //			dto.setBusjett(?);
 //			dto.setDiff(?);
 //			dto.setGren(?);
-			dto.setAnt(String.valueOf(headf.getHent()));
 			
 			dtoList.add(dto);
 			
